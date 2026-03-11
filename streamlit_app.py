@@ -20,8 +20,11 @@ with st.expander("📋 Machine Information", expanded=True):
     
     full_model = f"{base_model}{series_letter}"
     sn = st.text_input("Serial Number")
-    brand = st.text_input("Wheel Brand")
     
+    # NEW: Machine Hours
+    hours = st.number_input("Machine Hours", min_value=0, value=0, step=50)
+    
+    brand = st.text_input("Wheel Brand")
     col_t1, col_t2 = st.columns(2)
     with col_t1:
         tip_type = st.text_input("Tip Type")
@@ -55,61 +58,42 @@ for wheel in wheels:
         h_fail = st.toggle("Hub Damage?", key=f"hub_{wheel}")
         s_fail = st.toggle("Deformed?", key=f"struct_{wheel}")
 
-        # Safety Logic for Report
         status = "PASS"
         if rim <= 16 or cone <= 9 or w_fail or h_fail or s_fail:
-            status = "FAIL/ATTENTION REQUIRED"
+            status = "FAIL/ATTENTION"
             st.error(f"🚨 {status}")
         else:
-            st.success("✅ Wheel Specs OK")
+            st.success("✅ OK")
         
-        # Store for PDF
         report_data.append({
             "name": wheel, "rim": rim, "cone": cone, "tip": tip_h, 
             "dia": dia, "width": width, "status": status
         })
         st.divider()
 
-# 3. FINAL SUMMARY & PDF GENERATION
+# 3. FINAL SUMMARY & PDF
 st.subheader("📝 Final Recommendation")
 rec = st.text_area("Enter maintenance plan...")
 
 def create_pdf():
     pdf = FPDF()
     pdf.add_page()
+    
+    def clean_text(text):
+        return str(text).encode('latin-1', 'ignore').decode('latin-1')
+
     pdf.set_font("Arial", 'B', 16)
     pdf.cell(200, 10, txt="WHEEL INSPECTION REPORT", ln=True, align='C')
-    
     pdf.set_font("Arial", size=12)
     pdf.ln(10)
-    pdf.cell(200, 10, txt=f"Customer: {cust} | Date: {date_str}", ln=True)
-    pdf.cell(200, 10, txt=f"Machine: {full_model} | SN: {sn}", ln=True)
-    pdf.cell(200, 10, txt=f"Wheel Brand: {brand} | Tips: {tip_count} {tip_type}", ln=True)
+    pdf.cell(200, 10, txt=clean_text(f"Customer: {cust} | Date: {date_str}"), ln=True)
+    pdf.cell(200, 10, txt=clean_text(f"Machine: {full_model} | SN: {sn} | Hours: {hours}"), ln=True)
+    pdf.cell(200, 10, txt=clean_text(f"Wheel Brand: {brand} | Tips: {tip_count} {tip_type}"), ln=True)
     pdf.ln(5)
     pdf.cell(200, 0, txt="", border="T", ln=True)
     pdf.ln(5)
 
     for data in report_data:
         pdf.set_font("Arial", 'B', 12)
-        pdf.cell(200, 10, txt=f"WHEEL: {data['name']} - {data['status']}", ln=True)
-        pdf.set_font("Arial", size=10)
-        pdf.cell(200, 8, txt=f"  Rim: {data['rim']}mm | Cone: {data['cone']}mm | Tip Height: {data['tip']}mm", ln=True)
-        pdf.cell(200, 8, txt=f"  Diameter: {data['dia']}\" | Width: {data['width']}\"", ln=True)
-        pdf.ln(2)
-
-    pdf.ln(5)
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(200, 10, txt="Recommendation:", ln=True)
-    pdf.set_font("Arial", size=10)
-    pdf.multi_cell(0, 8, txt=rec)
-    
-    return pdf.output(dest='S').encode('latin-1')
-
-if st.button("🚀 Prepare PDF Report"):
-    pdf_bytes = create_pdf()
-    st.download_button(
-        label="📥 Download PDF Summary",
-        data=pdf_bytes,
-        file_name=f"Inspection_{sn}_{datetime.date.today()}.pdf",
-        mime="application/pdf"
-    )
+        pdf.cell(200, 10, txt=clean_text(f"WHEEL: {data['name']} - {data['status']}"), ln=True)
+        pdf.set_font("
