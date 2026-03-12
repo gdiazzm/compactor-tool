@@ -92,4 +92,31 @@ def create_pdf():
     pdf.set_font("Arial", size=11)
     pdf.ln(10)
     pdf.cell(200, 8, txt=clean_text(f"Customer: {cust} | Date: {date_str}"), ln=True)
-    pdf.cell(200, 8, txt=clean_text(f"Machine: {full_model} | SN: {
+    pdf.cell(200, 8, txt=clean_text(f"Machine: {full_model} | SN: {sn} | Hours: {hours}"), ln=True)
+    pdf.cell(200, 8, txt=clean_text(f"Wheel Specs: {brand} | {dia}\" x {width}\" | {tip_count} {tip_type} Tips"), ln=True)
+    pdf.ln(5)
+    pdf.cell(200, 0, txt="", border="T", ln=True)
+    pdf.ln(5)
+
+    for data in report_data:
+        pdf.set_font("Arial", 'B', 12)
+        pdf.cell(200, 10, txt=clean_text(f"WHEEL: {data['name']} - {data['status']}"), ln=True)
+        pdf.set_font("Arial", size=10)
+        pdf.cell(200, 8, txt=clean_text(f"  Rim: {data['rim']}mm | Cone: {data['cone']}mm | Tip Height: {data['tip']}mm"), ln=True)
+        pdf.ln(2)
+
+    pdf.ln(5)
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(200, 10, txt="Recommendation:", ln=True)
+    pdf.set_font("Arial", size=10)
+    pdf.multi_cell(0, 8, txt=clean_text(rec))
+    return pdf.output(dest='S').encode('latin-1', 'ignore')
+
+if st.button("🚀 Prepare PDF Report"):
+    pdf_bytes = create_pdf()
+    st.download_button(
+        label="📥 Download PDF Summary",
+        data=pdf_bytes,
+        file_name=f"Inspection_{sn}_{datetime.date.today()}.pdf",
+        mime="application/pdf"
+    )
