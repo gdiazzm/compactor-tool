@@ -12,16 +12,22 @@ st.write(f"**Date:** {date_str}")
 # 1. MACHINE HEADER
 with st.expander("📋 Machine Information", expanded=True):
     cust = st.text_input("Customer Name")
+    # NEW: Customer Account Number
+    cust_acc = st.text_input("Customer Account Number")
+    
     col_m1, col_m2 = st.columns(2)
     with col_m1:
         base_model = st.radio("Base Model", ["826", "836"], horizontal=True)
-    with col_m2: series_letter = st.text_input("Series Letter", value="K").upper()
+    with col_m2: 
+        series_letter = st.text_input("Series Letter", value="K").upper()
     
     full_model = f"{base_model}{series_letter}"
     
     col_h1, col_h2 = st.columns(2)
-    with col_h1: sn = st.text_input("Serial Number")
-    with col_h2: hours = st.number_input("Machine Hours", min_value=0, value=0, step=50)
+    with col_h1: 
+        sn = st.text_input("Serial Number")
+    with col_h2: 
+        hours = st.number_input("Machine Hours", min_value=0, value=0, step=50)
     
     brand = st.text_input("Wheel Brand")
     
@@ -60,7 +66,8 @@ for wheel in wheels:
         if rim <= 16 or cone <= 9 or w_fail or h_fail or s_fail:
             status = "FAIL/ATTENTION"
             st.error(f"🚨 {status}")
-        else: st.success("✅ OK")
+        else: 
+            st.success("✅ OK")
         
         report_data.append({"name": wheel, "rim": rim, "cone": cone, "tip": tip_h, "status": status})
         st.camera_input(f"Take Photo of {wheel}", key=f"cam_{wheel}")
@@ -79,8 +86,7 @@ def create_pdf():
     pdf.cell(200, 10, txt="WHEEL INSPECTION REPORT", ln=True, align='C')
     pdf.set_font("Arial", size=11)
     pdf.ln(10)
-    pdf.cell(200, 8, txt=clean_text(f"Customer: {cust} | Date: {date_str}"), ln=True)
-    # FIXED LINE BELOW:
+    pdf.cell(200, 8, txt=clean_text(f"Customer: {cust} (Acc #: {cust_acc}) | Date: {date_str}"), ln=True)
     pdf.cell(200, 8, txt=clean_text(f"Machine: {full_model} | SN: {sn} | Hours: {hours}"), ln=True)
     pdf.cell(200, 8, txt=clean_text(f"Wheel Specs: {brand} | {dia}\" x {width}\" | {tip_count} {tip_type} Tips"), ln=True)
     pdf.ln(5)
