@@ -9,26 +9,22 @@ st.title("🚜 Wheel Inspection")
 date_str = datetime.date.today().strftime('%B %d, %y')
 st.write(f"**Date:** {date_str}")
 
-# 1. MACHINE HEADER (Now includes Brand, Tips, and Wrapper Specs)
+# 1. MACHINE HEADER
 with st.expander("📋 Machine Information", expanded=True):
     cust = st.text_input("Customer Name")
     col_m1, col_m2 = st.columns(2)
     with col_m1:
         base_model = st.radio("Base Model", ["826", "836"], horizontal=True)
-    with col_m2:
-        series_letter = st.text_input("Series Letter", value="K").upper()
+    with col_m2: series_letter = st.text_input("Series Letter", value="K").upper()
     
     full_model = f"{base_model}{series_letter}"
     
     col_h1, col_h2 = st.columns(2)
-    with col_h1:
-        sn = st.text_input("Serial Number")
-    with col_h2:
-        hours = st.number_input("Machine Hours", min_value=0, value=0, step=50)
+    with col_h1: sn = st.text_input("Serial Number")
+    with col_h2: hours = st.number_input("Machine Hours", min_value=0, value=0, step=50)
     
     brand = st.text_input("Wheel Brand")
     
-    # WRAPPER & TIP SPECS (Common to all wheels)
     col_s1, col_s2 = st.columns(2)
     with col_s1:
         dia = st.text_input("Wrapper Diameter (Inches)")
@@ -37,9 +33,9 @@ with st.expander("📋 Machine Information", expanded=True):
         width = st.text_input("Wrapper Width (Inches)")
         tip_count = st.number_input("Tip Count Per Wheel", min_value=0, value=40)
 
-    st.info(f"Inspecting: **{full_model}** | **{dia}\" x {width}\"** Wrappers | **{tip_count} {tip_type}** Tips")
+    st.info(f"Inspecting: **{full_model}** | **{dia}\" x {width}\"** | **{tip_count} {tip_type}** Tips")
 
-# 2. THE 4-WHEEL INSPECTION (Wear-focused only)
+# 2. THE 4-WHEEL INSPECTION
 wheels = ["Front Left", "Front Right", "Rear Left", "Rear Right"]
 report_data = []
 
@@ -56,23 +52,17 @@ for wheel in wheels:
 
         st.write("**Integrity Checks:**")
         c1, c2, c3 = st.columns(3)
-        with c1:
-            w_fail = st.toggle("Weld Worn?", key=f"weld_{wheel}")
-        with c2:
-            h_fail = st.toggle("Hub Damage?", key=f"hub_{wheel}")
-        with c3:
-            s_fail = st.toggle("Deformed?", key=f"struct_{wheel}")
+        with c1: w_fail = st.toggle("Weld Worn?", key=f"weld_{wheel}")
+        with c2: h_fail = st.toggle("Hub Damage?", key=f"hub_{wheel}")
+        with c3: s_fail = st.toggle("Deformed?", key=f"struct_{wheel}")
 
         status = "PASS"
         if rim <= 16 or cone <= 9 or w_fail or h_fail or s_fail:
             status = "FAIL/ATTENTION"
             st.error(f"🚨 {status}")
-        else:
-            st.success("✅ OK")
+        else: st.success("✅ OK")
         
-        report_data.append({
-            "name": wheel, "rim": rim, "cone": cone, "tip": tip_h, "status": status
-        })
+        report_data.append({"name": wheel, "rim": rim, "cone": cone, "tip": tip_h, "status": status})
         st.camera_input(f"Take Photo of {wheel}", key=f"cam_{wheel}")
         st.divider()
 
@@ -83,15 +73,14 @@ rec = st.text_area("Enter maintenance plan...")
 def create_pdf():
     pdf = FPDF()
     pdf.add_page()
-    
-    def clean_text(text):
-        return str(text).encode('latin-1', 'ignore').decode('latin-1')
+    def clean_text(text): return str(text).encode('latin-1', 'ignore').decode('latin-1')
 
     pdf.set_font("Arial", 'B', 16)
     pdf.cell(200, 10, txt="WHEEL INSPECTION REPORT", ln=True, align='C')
     pdf.set_font("Arial", size=11)
     pdf.ln(10)
     pdf.cell(200, 8, txt=clean_text(f"Customer: {cust} | Date: {date_str}"), ln=True)
+    # FIXED LINE BELOW:
     pdf.cell(200, 8, txt=clean_text(f"Machine: {full_model} | SN: {sn} | Hours: {hours}"), ln=True)
     pdf.cell(200, 8, txt=clean_text(f"Wheel Specs: {brand} | {dia}\" x {width}\" | {tip_count} {tip_type} Tips"), ln=True)
     pdf.ln(5)
