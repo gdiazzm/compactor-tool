@@ -29,7 +29,25 @@ st.markdown("""
         border-left: 10px solid #fbc02d;
         border-radius: 0px 0px 5px 5px;
         margin-bottom: 25px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .limit-note {
+        font-size: 12px;
+        font-weight: normal;
+        color: #d32f2f;
+        background-color: #ffffff;
+        padding: 2px 8px;
+        border-radius: 10px;
+        border: 1px solid #d32f2f;
+    }
+    .pt-header {
+        font-size: 11px;
         font-weight: bold;
+        text-align: center;
+        color: #555;
+        margin-bottom: -15px;
     }
     .status-ok {
         color: #2e7d32;
@@ -51,7 +69,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # Rev# Update
-st.markdown('<div class="rev-label">REV 1.1.0</div>', unsafe_allow_html=True)
+st.markdown('<div class="rev-label">REV 1.1.2</div>', unsafe_allow_html=True)
 
 st.title("🚜 Wheel Inspection")
 date_str = datetime.date.today().strftime('%B %d, %y')
@@ -70,7 +88,6 @@ with st.expander("📋 Machine Information", expanded=True):
     h1, h2, h3 = st.columns(3)
     hours = h1.number_input("Hours", min_value=0, step=100)
     brand = h2.text_input("Wheel Brand")
-    # TIP TYPE determines the SCRAP LIMIT
     tip_type = h3.selectbox("Tip Type", ["Plus", "Paddle", "Combo", "Diamond"])
 
     d1, d2, d3 = st.columns(3)
@@ -82,7 +99,6 @@ with st.expander("📋 Machine Information", expanded=True):
 
 # Define Scrap Limit based on Tip Type
 scrap_limit = 20 if tip_type == "Diamond" else 16
-st.sidebar.info(f"Current Rim Scrap Limit: **{scrap_limit}mm** (Based on {tip_type} tips)")
 
 # 2. THE 4-WHEEL INSPECTION
 wheels = ["Front Left", "Front Right", "Rear Left", "Rear Right"]
@@ -98,11 +114,26 @@ for wheel in wheels:
         tip_h = col_t1.number_input(f"Tip Height (mm)", value=190.0, key=f"tip_{wheel}")
         wear_bars = col_t2.selectbox("Wear Bars Pattern", ["Normal Wear", "Worn (Add midpoint bars)", "Replace"], key=f"bars_{wheel}")
 
-    # WRAPPER SECTION (12 Points Grid)
-    st.markdown(f'<div class="wrapper-row">{wheel} Wheel, Wrapper Measurements (12 Points)</div>', unsafe_allow_html=True)
+    # WRAPPER SECTION (With Note next to label)
+    st.markdown(f'''
+        <div class="wrapper-row">
+            <span>{wheel} Wheel, Wrapper Measurements</span>
+            <span class="limit-note">Scrap Limit: {scrap_limit}mm</span>
+        </div>
+    ''', unsafe_allow_html=True)
+    
     with st.container():
-        m_cols = st.columns(6)
+        # Labels
+        for row in range(2):
+            cols = st.columns(6)
+            for i in range(6):
+                pt_num = i + 1 + (row * 6)
+                with cols[i]:
+                    st.markdown(f'<div class="pt-header">Pt {pt_num}</div>', unsafe_allow_html=True)
+        
+        # Inputs
         rim_measurements = []
+        m_cols = st.columns(6)
         for i in range(12):
             with m_cols[i % 6]:
                 val = st.number_input(f"Pt{i+1}", value=25.0, step=0.5, key=f"m_{wheel}_{i}", label_visibility="collapsed")
@@ -116,10 +147,10 @@ for wheel in wheels:
         hub_damage = col_w3.toggle("Hub/Rim damage?", key=f"hub_{wheel}")
         struct_damage = st.toggle("Extensive deformation / Broken welds?", key=f"struct_{wheel}")
 
-    # CRITERIA LOGIC (Dynamic Scrap Limit)
+    # CRITERIA LOGIC
     reasons = []
     if min_rim <= scrap_limit: 
-        reasons.append(f"Min rim ({min_rim}mm) ≤ {scrap_limit}mm scrap limit for {tip_type} tips")
+        reasons.append(f"Min rim ({min_rim}mm) ≤ {scrap_limit}mm ({tip_type})")
     if cone <= 9: reasons.append("Cone ≤ 9mm")
     if weld_edge: reasons.append("Edge worn into weld")
     if hub_damage: reasons.append("Hub/Inner rim damage")
@@ -151,7 +182,7 @@ def create_pdf():
     pdf.set_font("Arial", 'B', 14)
     pdf.cell(190, 10, txt="Component History Report", ln=True, align='C')
     pdf.set_font("Arial", '', 8)
-    pdf.cell(190, 5, txt=f"REV 1.1.0", ln=True, align='R')
+    pdf.cell(190, 5, txt=f"REV 1.1.2", ln=True, align='R')
     pdf.set_font("Arial", '', 10)
     pdf.cell(190, 5, txt=clean_text(f"Customer: {cust} (Acc: {cust_acc}) | Date: {date_str}"), ln=True, align='C')
     pdf.cell(190, 5, txt=clean_text(f"Machine: {full_model} (SN: {sn}) | Hours: {hours}"), ln=True, align='C')
@@ -182,4 +213,4 @@ def create_pdf():
 
 if st.button("🚀 Generate PDF Summary"):
     pdf_bytes = create_pdf()
-    st.download_button(label="📥 Download History PDF", data=pdf_bytes, file_name=f"History_{sn}_Rev110.pdf", mime="application/pdf")
+    st.download_button(label="📥 Download History PDF", data=pdf_bytes, file_name=f"History_{sn}_Rev112.pdf", mime="application/pdf")
