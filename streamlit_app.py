@@ -37,10 +37,12 @@ st.markdown("""
         gap: 15px;
         margin-bottom: 10px;
     }
+    /* Matching Streamlit default label style exactly */
     .thickness-label {
-        font-size: 1rem;
+        font-size: 14px;
         font-weight: 400;
         color: rgb(49, 51, 63);
+        font-family: "Source Sans Pro", sans-serif;
     }
     .limit-note {
         font-size: 12px;
@@ -67,11 +69,15 @@ st.markdown("""
         border: 1px solid #c62828;
         font-weight: bold;
     }
+    /* Aligning toggles professionally */
+    .stCheckbox {
+        margin-bottom: -10px;
+    }
     </style>
     """, unsafe_allow_html=True)
 
 # Rev# Update
-st.markdown('<div class="rev-label">REV 1.1.4</div>', unsafe_allow_html=True)
+st.markdown('<div class="rev-label">REV 1.1.5</div>', unsafe_allow_html=True)
 
 st.title("🚜 Wheel Inspection")
 date_str = datetime.date.today().strftime('%B %d, %y')
@@ -120,7 +126,6 @@ for wheel in wheels:
     st.markdown(f'<div class="wrapper-row">{wheel} Wheel, Wrapper Info</div>', unsafe_allow_html=True)
     
     with st.container():
-        # Unified Header with Label and Scrap Limit
         st.markdown(f'''
             <div class="thickness-container">
                 <span class="thickness-label">Wrapper Thickness (mm)</span>
@@ -128,7 +133,7 @@ for wheel in wheels:
             </div>
         ''', unsafe_allow_html=True)
         
-        # Inputs Grid
+        # 12 Points Grid
         rim_measurements = []
         m_cols = st.columns(6)
         for i in range(12):
@@ -138,11 +143,18 @@ for wheel in wheels:
         
         min_rim = min(rim_measurements)
         
-        col_w1, col_w2, col_w3 = st.columns(3)
-        cone = col_w1.number_input(f"Cone (mm)", value=15.0, key=f"cone_{wheel}")
-        weld_edge = col_w2.toggle("Edge in weld?", key=f"weld_{wheel}")
-        hub_damage = col_w3.toggle("Hub/Rim damage?", key=f"hub_{wheel}")
-        struct_damage = st.toggle("Extensive deformation / Broken welds?", key=f"struct_{wheel}")
+        st.divider()
+        
+        # Professional Alignment for Integrity Checks
+        col_left, col_right = st.columns([1.5, 1])
+        with col_left:
+            cone = st.number_input(f"Cone Thickness (mm)", value=15.0, key=f"cone_{wheel}")
+        
+        with col_right:
+            # Toggles stacked vertically and aligned
+            weld_edge = st.toggle("Edge in weld?", key=f"weld_{wheel}")
+            hub_damage = st.toggle("Hub/Rim damage?", key=f"hub_{wheel}")
+            struct_damage = st.toggle("Extensive deformation?", key=f"struct_{wheel}")
 
     # CRITERIA LOGIC
     reasons = []
@@ -179,7 +191,7 @@ def create_pdf():
     pdf.set_font("Arial", 'B', 14)
     pdf.cell(190, 10, txt="Component History Report", ln=True, align='C')
     pdf.set_font("Arial", '', 8)
-    pdf.cell(190, 5, txt=f"REV 1.1.4", ln=True, align='R')
+    pdf.cell(190, 5, txt=f"REV 1.1.5", ln=True, align='R')
     pdf.set_font("Arial", '', 10)
     pdf.cell(190, 5, txt=clean_text(f"Customer: {cust} (Acc: {cust_acc}) | Date: {date_str}"), ln=True, align='C')
     pdf.cell(190, 5, txt=clean_text(f"Machine: {full_model} (SN: {sn}) | Hours: {hours}"), ln=True, align='C')
@@ -210,4 +222,4 @@ def create_pdf():
 
 if st.button("🚀 Generate PDF Summary"):
     pdf_bytes = create_pdf()
-    st.download_button(label="📥 Download History PDF", data=pdf_bytes, file_name=f"History_{sn}_Rev114.pdf", mime="application/pdf")
+    st.download_button(label="📥 Download History PDF", data=pdf_bytes, file_name=f"History_{sn}_Rev115.pdf", mime="application/pdf")
