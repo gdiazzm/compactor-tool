@@ -29,16 +29,18 @@ st.markdown("""
         border-left: 10px solid #fbc02d;
         border-radius: 0px 0px 5px 5px;
         margin-bottom: 25px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    .thickness-header {
-        font-size: 14px;
         font-weight: bold;
-        color: #444;
-        margin-bottom: 5px;
-        text-decoration: underline;
+    }
+    .thickness-container {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 10px;
+    }
+    .thickness-label {
+        font-size: 1rem;
+        font-weight: 400;
+        color: rgb(49, 51, 63);
     }
     .limit-note {
         font-size: 12px;
@@ -69,7 +71,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # Rev# Update
-st.markdown('<div class="rev-label">REV 1.1.3</div>', unsafe_allow_html=True)
+st.markdown('<div class="rev-label">REV 1.1.4</div>', unsafe_allow_html=True)
 
 st.title("🚜 Wheel Inspection")
 date_str = datetime.date.today().strftime('%B %d, %y')
@@ -114,18 +116,19 @@ for wheel in wheels:
         tip_h = col_t1.number_input(f"Tip Height (mm)", value=190.0, key=f"tip_{wheel}")
         wear_bars = col_t2.selectbox("Wear Bars Pattern", ["Normal Wear", "Worn (Add midpoint bars)", "Replace"], key=f"bars_{wheel}")
 
-    # WRAPPER SECTION
-    st.markdown(f'''
-        <div class="wrapper-row">
-            <span>{wheel} Wheel, Wrapper Measurements</span>
-            <span class="limit-note">Scrap Limit: {scrap_limit}mm</span>
-        </div>
-    ''', unsafe_allow_html=True)
+    # WRAPPER SECTION Header
+    st.markdown(f'<div class="wrapper-row">{wheel} Wheel, Wrapper Info</div>', unsafe_allow_html=True)
     
     with st.container():
-        st.markdown('<div class="thickness-header">Wrapper Thickness</div>', unsafe_allow_html=True)
+        # Unified Header with Label and Scrap Limit
+        st.markdown(f'''
+            <div class="thickness-container">
+                <span class="thickness-label">Wrapper Thickness (mm)</span>
+                <span class="limit-note">Scrap Limit: {scrap_limit}mm</span>
+            </div>
+        ''', unsafe_allow_html=True)
         
-        # Inputs Grid (Clean without Pt labels)
+        # Inputs Grid
         rim_measurements = []
         m_cols = st.columns(6)
         for i in range(12):
@@ -176,7 +179,7 @@ def create_pdf():
     pdf.set_font("Arial", 'B', 14)
     pdf.cell(190, 10, txt="Component History Report", ln=True, align='C')
     pdf.set_font("Arial", '', 8)
-    pdf.cell(190, 5, txt=f"REV 1.1.3", ln=True, align='R')
+    pdf.cell(190, 5, txt=f"REV 1.1.4", ln=True, align='R')
     pdf.set_font("Arial", '', 10)
     pdf.cell(190, 5, txt=clean_text(f"Customer: {cust} (Acc: {cust_acc}) | Date: {date_str}"), ln=True, align='C')
     pdf.cell(190, 5, txt=clean_text(f"Machine: {full_model} (SN: {sn}) | Hours: {hours}"), ln=True, align='C')
@@ -207,4 +210,4 @@ def create_pdf():
 
 if st.button("🚀 Generate PDF Summary"):
     pdf_bytes = create_pdf()
-    st.download_button(label="📥 Download History PDF", data=pdf_bytes, file_name=f"History_{sn}_Rev113.pdf", mime="application/pdf")
+    st.download_button(label="📥 Download History PDF", data=pdf_bytes, file_name=f"History_{sn}_Rev114.pdf", mime="application/pdf")
