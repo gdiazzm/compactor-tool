@@ -90,37 +90,49 @@ for wheel in wheels:
             wear_bars = st.selectbox("Wear Bars Pattern", ["Normal Wear", "Worn (Add midpoint bars)", "Replace"], key=f"bars_{wheel}")
 
     # WRAPPER SECTION (Yellow)
-    st.markdown(f'<div class="wrapper-row">{wheel} Wheel, Wrapper</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="wrapper-row">{wheel} Wheel, Wrapper Measurements (12 Points)</div>', unsafe_allow_html=True)
     with st.container():
+        st.write("Enter rim thickness at 12 locations (mm):")
+        # COMPACT GRID FOR MEASUREMENTS
+        m_cols = st.columns(6)
+        rim_measurements = []
+        for i in range(12):
+            with m_cols[i % 6]:
+                val = st.number_input(f"Pt {i+1}", value=25.0, step=0.5, key=f"m_{wheel}_{i}", label_visibility="collapsed")
+                rim_measurements.append(val)
+        
+        min_rim = min(rim_measurements)
+        
+        st.divider()
         col_w1, col_w2 = st.columns(2)
         with col_w1:
-            rim = st.number_input(f"Rim Thickness (mm)", value=25.0, key=f"rim_{wheel}", help="Scrap limit is 16mm")
             cone = st.number_input(f"Cone Thickness (mm)", value=15.0, key=f"cone_{wheel}", help="Scrap limit is 9mm")
-        with col_w2:
-            st.write("Integrity & Structural Checks:")
             weld_edge = st.toggle("Edge worn into weld?", key=f"weld_{wheel}")
-            hub_damage = st.toggle("Hub pattern/Inner rim damage?", key=f"hub_{wheel}")
-            struct_damage = st.toggle("Extensive damage/Deformation?", key=f"struct_{wheel}")
+        with col_w2:
+            hub_damage = st.toggle("Hub/Inner rim damage?", key=f"hub_{wheel}")
+            struct_damage = st.toggle("Extensive deformation?", key=f"struct_{wheel}")
             st.camera_input(f"Upload Photo", key=f"cam_{wheel}")
 
     # CRITERIA LOGIC
     reasons = []
-    if rim <= 16: reasons.append("Rim thickness ≤ 16mm (Do not weld new tips)")
-    if cone <= 9: reasons.append("Cone thickness ≤ 9mm (Reinforce or Replace)")
+    if min_rim <= 16: reasons.append(f"Min rim thickness ({min_rim}mm) ≤ 16mm")
+    if cone <= 9: reasons.append("Cone thickness ≤ 9mm")
     if weld_edge: reasons.append("Edge worn into weld")
-    if hub_damage: reasons.append("Hub/Inner rim damage detected")
-    if struct_damage: reasons.append("Structural deformation/Broken welds")
+    if hub_damage: reasons.append("Hub/Inner rim damage")
+    if struct_damage: reasons.append("Structural deformation")
 
     if reasons:
         st.markdown(f'**Result:** <span class="status-fail">❌ FAIL / IMMEDIATE ATTENTION</span>', unsafe_allow_html=True)
-        for r in reasons:
-            st.error(f"⚠️ {r}")
+        for r in reasons: st.warning(f"⚠️ {r}")
         final_status = "Immediate Attention"
     else:
         st.markdown(f'**Result:** <span class="status-ok">✅ OK / NORMAL WEAR</span>', unsafe_allow_html=True)
         final_status = "Normal Wear"
 
-    report_data.append({"name": wheel, "rim": rim, "cone": cone, "tip": tip_h, "status": final_status, "bars": wear_bars, "notes": ", ".join(reasons)})
+    report_data.append({
+        "name": wheel, "rim_avg": sum(rim_measurements)/12, "rim_min": min_rim,
+        "cone": cone, "tip": tip_h, "status": final_status, "bars": wear_bars, "notes": ", ".join(reasons)
+    })
     st.divider()
 
 # 3. FINAL SUMMARY & PDF
@@ -143,21 +155,21 @@ def create_pdf():
     pdf.set_font("Arial", 'B', 8)
     pdf.cell(45, 8, "Component", 1, 0, 'C', True)
     pdf.cell(35, 8, "Condition", 1, 0, 'C', True)
-    pdf.cell(30, 8, "Measure", 1, 0, 'C', True)
+    pdf.cell(30, 8, "Min/Avg Measure", 1, 0, 'C', True)
     pdf.cell(80, 8, "Alerts/Notes", 1, 1, 'C', True)
 
     for data in report_data:
         pdf.set_font("Arial", '', 8)
-        # Tips Row
+        # Tips
         pdf.cell(45, 8, clean_text(f"{data['name']} Tips"), 1)
         pdf.cell(35, 8, clean_text(data['bars']), 1, 0, 'C')
         pdf.cell(30, 8, f"{data['tip']} mm", 1, 0, 'C')
         pdf.cell(80, 8, clean_text(f"Type: {tip_type}"), 1, 1)
-        # Wrapper Row
+        # Wrapper
         pdf.set_fill_color(255, 250, 205)
         pdf.cell(45, 8, clean_text(f"{data['name']} Wrapper"), 1, 0, 'L', True)
         pdf.cell(35, 8, clean_text(data['status']), 1, 0, 'C', True)
-        pdf.cell(30, 8, f"{data['rim']} mm", 1, 0, 'C', True)
+        pdf.cell(30, 8, f"{data['rim_min']} / {data['rim_avg']:.1f}", 1, 0, 'C', True)
         pdf.cell(80, 8, clean_text(f"Cone: {data['cone']}mm | {data['notes']}"), 1, 1, 'L', True)
 
     pdf.ln(5)
