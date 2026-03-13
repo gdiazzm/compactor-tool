@@ -50,32 +50,29 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# Rev# in top right
-st.markdown('<div class="rev-label">REV 1.0.9</div>', unsafe_allow_html=True)
+# Rev# Update
+st.markdown('<div class="rev-label">REV 1.1.0</div>', unsafe_allow_html=True)
 
 st.title("🚜 Wheel Inspection")
 date_str = datetime.date.today().strftime('%B %d, %y')
 
 # 1. CLEANED MACHINE HEADER
 with st.expander("📋 Machine Information", expanded=True):
-    # Customer Info Row
     c1, c2 = st.columns([2, 1])
     cust = c1.text_input("Customer Name")
     cust_acc = c2.text_input("Account #")
     
-    # Machine Specs Row
     m1, m2, m3 = st.columns([1, 1, 1])
     base_model = m1.selectbox("Model", ["826", "836"])
     series_letter = m2.text_input("Series", value="K").upper()
     sn = m3.text_input("Serial Number")
     
-    # Usage and Branding Row
     h1, h2, h3 = st.columns(3)
     hours = h1.number_input("Hours", min_value=0, step=100)
     brand = h2.text_input("Wheel Brand")
-    tip_type = h3.text_input("Tip Type")
+    # TIP TYPE determines the SCRAP LIMIT
+    tip_type = h3.selectbox("Tip Type", ["Plus", "Paddle", "Combo", "Diamond"])
 
-    # Dimensions Row
     d1, d2, d3 = st.columns(3)
     dia = d1.text_input("Wrapper Dia (in)")
     width = d2.text_input("Wrapper Width (in)")
@@ -83,7 +80,11 @@ with st.expander("📋 Machine Information", expanded=True):
 
     full_model = f"{base_model}{series_letter}"
 
-# 2. THE 4-WHEEL INSPECTION (PICTURES REMOVED)
+# Define Scrap Limit based on Tip Type
+scrap_limit = 20 if tip_type == "Diamond" else 16
+st.sidebar.info(f"Current Rim Scrap Limit: **{scrap_limit}mm** (Based on {tip_type} tips)")
+
+# 2. THE 4-WHEEL INSPECTION
 wheels = ["Front Left", "Front Right", "Rear Left", "Rear Right"]
 report_data = []
 
@@ -115,9 +116,10 @@ for wheel in wheels:
         hub_damage = col_w3.toggle("Hub/Rim damage?", key=f"hub_{wheel}")
         struct_damage = st.toggle("Extensive deformation / Broken welds?", key=f"struct_{wheel}")
 
-    # CRITERIA LOGIC
+    # CRITERIA LOGIC (Dynamic Scrap Limit)
     reasons = []
-    if min_rim <= 16: reasons.append(f"Min rim ({min_rim}mm) ≤ 16mm")
+    if min_rim <= scrap_limit: 
+        reasons.append(f"Min rim ({min_rim}mm) ≤ {scrap_limit}mm scrap limit for {tip_type} tips")
     if cone <= 9: reasons.append("Cone ≤ 9mm")
     if weld_edge: reasons.append("Edge worn into weld")
     if hub_damage: reasons.append("Hub/Inner rim damage")
@@ -149,7 +151,7 @@ def create_pdf():
     pdf.set_font("Arial", 'B', 14)
     pdf.cell(190, 10, txt="Component History Report", ln=True, align='C')
     pdf.set_font("Arial", '', 8)
-    pdf.cell(190, 5, txt=f"REV 1.0.9", ln=True, align='R')
+    pdf.cell(190, 5, txt=f"REV 1.1.0", ln=True, align='R')
     pdf.set_font("Arial", '', 10)
     pdf.cell(190, 5, txt=clean_text(f"Customer: {cust} (Acc: {cust_acc}) | Date: {date_str}"), ln=True, align='C')
     pdf.cell(190, 5, txt=clean_text(f"Machine: {full_model} (SN: {sn}) | Hours: {hours}"), ln=True, align='C')
@@ -180,4 +182,4 @@ def create_pdf():
 
 if st.button("🚀 Generate PDF Summary"):
     pdf_bytes = create_pdf()
-    st.download_button(label="📥 Download History PDF", data=pdf_bytes, file_name=f"History_{sn}_Rev109.pdf", mime="application/pdf")
+    st.download_button(label="📥 Download History PDF", data=pdf_bytes, file_name=f"History_{sn}_Rev110.pdf", mime="application/pdf")
