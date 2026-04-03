@@ -3,9 +3,9 @@ import datetime
 from fpdf import FPDF
 
 # Page styling
-st.set_page_config(page_title="Wheel Inspection", layout="centered")
+st.set_page_config(page_title="Wheel Inspection Tool", layout="centered")
 
-# Custom CSS
+# Custom CSS for UI Professionalism
 st.markdown("""
     <style>
     .rev-label { position: absolute; top: -50px; right: 0px; font-size: 10px; color: #9e9e9e; font-family: monospace; }
@@ -19,7 +19,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-st.markdown('<div class="rev-label">REV 1.1.8</div>', unsafe_allow_html=True)
+st.markdown('<div class="rev-label">REV 1.2.1</div>', unsafe_allow_html=True)
 
 st.title("🚜 Wheel Inspection")
 date_str = datetime.date.today().strftime('%B %d, %y')
@@ -30,7 +30,7 @@ with st.expander("📋 Machine Information", expanded=True):
     cust = c1.text_input("Customer Name")
     cust_acc = c2.text_input("Account #")
     
-    m1, m2, m3 = st.columns([1, 1, 1])
+    m1, m2, m3 = st.columns(3)
     base_model = m1.selectbox("Model", ["826", "836"])
     series_letter = m2.text_input("Series", value="K").upper()
     sn = m3.text_input("Serial Number")
@@ -38,7 +38,7 @@ with st.expander("📋 Machine Information", expanded=True):
     h1, h2, h3 = st.columns(3)
     hours = h1.number_input("Hours", min_value=0, step=100)
     brand = h2.text_input("Wheel Brand")
-    inspector = h3.text_input("Inspector Name") # NEW FIELD
+    inspector = h3.text_input("Inspector Name")
 
     d1, d2, d3, d4 = st.columns(4)
     tip_type = d1.selectbox("Tip Type", ["Plus", "Paddle", "Combo", "Diamond"])
@@ -64,28 +64,36 @@ for wheel in wheels:
 
     st.markdown(f'<div class="wrapper-row">{wheel} Wheel, Wrapper Info</div>', unsafe_allow_html=True)
     with st.container():
-        st.markdown(f'<div class="thickness-container"><span class="thickness-label">Wrapper Thickness (mm)</span><span class="limit-note">Scrap Limit: {scrap_limit}mm</span></div>', unsafe_allow_html=True)
+        st.markdown(f'''<div class="thickness-container"><span class="thickness-label">Wrapper Thickness (mm)</span><span class="limit-note">Scrap Limit: {scrap_limit}mm</span></div>''', unsafe_allow_html=True)
+        
         rim_measurements = []
         m_cols = st.columns(6)
-        for i in range(12):
-            with m_cols[i % 6]:
+        for i in range(6):
+            with m_cols[i]:
                 val = st.number_input(f"pt{i+1}", value=25.0, step=0.5, key=f"m_{wheel}_{i}", label_visibility="collapsed")
                 rim_measurements.append(val)
         
+        st.markdown(f'''<div class="thickness-container"><span class="thickness-label">Cone Thickness (mm)</span><span class="limit-note">Scrap Limit: 9mm</span></div>''', unsafe_allow_html=True)
+        cone_measurements = []
+        c_cols = st.columns(3)
+        for i in range(3):
+            with c_cols[i]:
+                c_val = st.number_input(f"cone_pt{i+1}", value=15.0, step=0.5, key=f"cone_{wheel}_{i}", label_visibility="collapsed")
+                cone_measurements.append(c_val)
+
         min_rim = min(rim_measurements)
+        min_cone = min(cone_measurements)
+        
         st.divider()
-        col_left, col_right = st.columns([1.5, 1])
-        with col_left:
-            cone = st.number_input(f"Cone Thickness (mm)", value=15.0, key=f"cone_{wheel}")
+        col_right = st.columns(1)[0]
         with col_right:
             weld_edge = st.toggle("Edge in weld?", key=f"weld_{wheel}")
             hub_damage = st.toggle("Hub/Rim damage?", key=f"hub_{wheel}")
             struct_damage = st.toggle("Extensive deformation?", key=f"struct_{wheel}")
 
-    # CRITERIA LOGIC
     reasons = []
     if min_rim <= scrap_limit: reasons.append(f"Min rim ({min_rim}mm) <= {scrap_limit}mm")
-    if cone <= 9: reasons.append("Cone <= 9mm")
+    if min_cone <= 9: reasons.append(f"Min cone ({min_cone}mm) <= 9mm")
     if weld_edge: reasons.append("Edge in weld")
     if hub_damage: reasons.append("Hub damage")
     if struct_damage: reasons.append("Structural deformation")
@@ -96,10 +104,14 @@ for wheel in wheels:
     if reasons:
         for r in reasons: st.warning(f"⚠️ {r}")
 
-    report_data.append({"name": wheel, "rim_pts": rim_measurements, "rim_min": min_rim, "cone": cone, "tip": tip_h, "result": wheel_result, "bars": wear_bars, "notes": ", ".join(reasons)})
+    report_data.append({"name": wheel, "rim_pts": rim_measurements, "rim_min": min_rim, "cone_pts": cone_measurements, "cone_min": min_cone, "tip": tip_h, "result": wheel_result, "bars": wear_bars, "notes": ", ".join(reasons)})
     st.divider()
 
-# 3. PDF GENERATION
+# 3. FINAL RECOMMENDATION
+st.subheader("📝 Final Recommendation")
+rec = st.text_area("Maintenance plan notes...")
+
+# 4. PDF GENERATION
 def create_pdf():
     pdf = FPDF()
     pdf.add_page()
@@ -108,60 +120,67 @@ def create_pdf():
     pdf.set_font("Arial", 'B', 16)
     pdf.cell(190, 10, txt="Wheel Inspection Report", ln=True, align='C')
     pdf.set_font("Arial", '', 7)
-    pdf.cell(190, 5, txt=f"REV 1.1.8", ln=True, align='R')
+    pdf.cell(190, 5, txt=f"REV 1.2.1", ln=True, align='R')
     pdf.ln(5)
 
-    # HEADER (3x3 grid)
-    pdf.set_fill_color(245, 245, 245)
+    pdf.set_fill_color(240, 240, 240)
     pdf.set_font("Arial", 'B', 10)
-    pdf.cell(190, 8, txt=" INSPECTION INFORMATION", ln=True, fill=True)
+    pdf.cell(190, 8, txt=" INSPECTION & MACHINE DETAILS", ln=True, fill=True)
     pdf.set_font("Arial", '', 9)
     pdf.cell(63, 7, txt=clean_text(f"Customer: {cust}"), border='LRB')
     pdf.cell(63, 7, txt=clean_text(f"Account #: {cust_acc}"), border='RB')
-    pdf.cell(64, 7, txt=clean_text(f"Inspector: {inspector}"), border='RB', ln=True)
-    
+    pdf.cell(64, 7, txt=clean_text(f"Date: {date_str}"), border='RB', ln=True)
     pdf.cell(63, 7, txt=clean_text(f"Model: {full_model}"), border='LRB')
     pdf.cell(63, 7, txt=clean_text(f"Serial #: {sn}"), border='RB')
-    pdf.cell(64, 7, txt=clean_text(f"Hours: {hours}"), border='RB', ln=True)
-
-    pdf.cell(47.5, 7, txt=clean_text(f"Tip Type: {tip_type}"), border='LRB')
-    pdf.cell(47.5, 7, txt=clean_text(f"Tip Count: {tip_count}"), border='RB')
-    pdf.cell(47.5, 7, txt=clean_text(f"Diameter: {dia} in"), border='RB')
+    pdf.cell(64, 7, txt=clean_text(f"Inspector: {inspector}"), border='RB', ln=True)
+    pdf.cell(47.5, 7, txt=clean_text(f"Tip: {tip_type} ({tip_count})"), border='LRB')
+    pdf.cell(47.5, 7, txt=clean_text(f"Hours: {hours}"), border='RB')
+    pdf.cell(47.5, 7, txt=clean_text(f"Dia: {dia} in"), border='RB')
     pdf.cell(47.5, 7, txt=clean_text(f"Width: {width} in"), border='RB', ln=True)
-    pdf.ln(10)
+    pdf.ln(8)
 
     for data in report_data:
         pdf.set_fill_color(230, 230, 230)
         pdf.set_font("Arial", 'B', 11)
-        pdf.cell(140, 9, txt=clean_text(f" LOCATION: {data['name'].upper()}"), border='LBT', fill=True)
-        
-        # Result marking
-        if data['result'] == "PASS":
-            pdf.set_text_color(0, 128, 0)
-        else:
-            pdf.set_text_color(200, 0, 0)
-        pdf.cell(50, 9, txt=f"RESULT: {data['result']}", border='RBT', ln=True, fill=True, align='C')
+        pdf.cell(150, 9, txt=clean_text(f" {data['name'].upper()} WHEEL"), border='LBT', fill=True)
+        if data['result'] == "PASS": pdf.set_text_color(0, 100, 0)
+        else: pdf.set_text_color(200, 0, 0)
+        pdf.cell(40, 9, txt=f"{data['result']}", border='RBT', ln=True, fill=True, align='C')
         pdf.set_text_color(0, 0, 0)
 
-        # Tables...
-        pdf.set_font("Arial", 'B', 9)
-        pdf.cell(40, 7, "Component", 1); pdf.cell(40, 7, "Condition", 1); pdf.cell(35, 7, "Measure", 1); pdf.cell(75, 7, "Notes", 1, ln=True)
-        pdf.set_font("Arial", '', 9)
-        pdf.cell(40, 7, "Tips", 1); pdf.cell(40, 7, clean_text(data['bars']), 1); pdf.cell(35, 7, f"{data['tip']}mm", 1); pdf.cell(75, 7, "--", 1, ln=True)
-        pdf.cell(40, 7, "Wrapper Plate", 1); pdf.cell(40, 7, "--", 1); pdf.cell(35, 7, f"Min: {data['rim_min']}mm", 1); pdf.cell(75, 7, clean_text(f"Cone: {data['cone']}mm | {data['notes']}"), 1, ln=True)
-
-        pdf.set_font("Arial", 'I', 8)
-        pdf.cell(190, 6, "12-Point Wrapper Thickness Detail:", ln=True)
+        pdf.set_font("Arial", 'B', 8)
+        pdf.cell(40, 6, "Component", 1); pdf.cell(40, 6, "Condition", 1); pdf.cell(30, 6, "Min/Measure", 1); pdf.cell(80, 6, "Alerts/Notes", 1, ln=True)
         pdf.set_font("Arial", '', 8)
-        for row in range(2):
-            for i in range(6):
-                idx = i + (row * 6)
-                pdf.cell(31.6, 6, f"Pt{idx+1}: {data['rim_pts'][idx]}", 1, 0, 'C')
-            pdf.ln()
-        pdf.ln(5)
+        pdf.cell(40, 6, "Tips", 1); pdf.cell(40, 6, clean_text(data['bars']), 1); pdf.cell(30, 6, f"{data['tip']}mm", 1); pdf.cell(80, 6, "--", 1, ln=True)
+        pdf.cell(40, 6, "Wrapper", 1); pdf.cell(40, 6, "--", 1); pdf.cell(30, 6, f"{data['rim_min']}mm", 1); pdf.cell(80, 6, clean_text(data['notes']), 1, ln=True)
 
+        pdf.set_font("Arial", 'I', 7)
+        pdf.cell(95, 5, "Wrapper Thickness Detail (6 Points):")
+        pdf.cell(95, 5, "Cone Thickness Detail (3 Points):", ln=True)
+        pdf.set_font("Arial", '', 7)
+        
+        # Row for details
+        for i in range(6):
+            pdf.cell(15.8, 5, f"P{i+1}:{data['rim_pts'][i]}", 1, 0, 'C')
+        pdf.cell(2, 5, "") # Spacer
+        for j in range(3):
+            pdf.cell(25.3, 5, f"Cone P{j+1}:{data['cone_pts'][j]}", 1, 0, 'C')
+        pdf.ln(8)
+
+    pdf.ln(2)
+    pdf.set_font("Arial", 'B', 10)
+    pdf.cell(190, 8, txt=" FINAL RECOMMENDATION", ln=True, fill=True)
+    pdf.set_font("Arial", '', 9)
+    pdf.multi_cell(190, 5, txt=clean_text(rec), border=1)
+    
+    pdf.ln(15)
+    pdf.cell(95, 10, "________________________________", align='L')
+    pdf.cell(95, 10, "________________________________", ln=1, align='R')
+    pdf.set_font("Arial", 'I', 8)
+    pdf.cell(95, 5, "Inspector Signature", align='L')
+    pdf.cell(95, 5, "Date of Review", align='R')
     return pdf.output(dest='S').encode('latin-1', 'ignore')
 
 if st.button("🚀 Generate PDF Summary"):
     pdf_bytes = create_pdf()
-    st.download_button(label="📥 Download History PDF", data=pdf_bytes, file_name=f"History_{sn}_Rev118.pdf", mime="application/pdf")
+    st.download_button(label="📥 Download Inspection PDF", data=pdf_bytes, file_name=f"Report_{sn}_Rev121.pdf", mime="application/pdf")
